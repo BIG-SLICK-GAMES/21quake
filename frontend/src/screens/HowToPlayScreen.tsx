@@ -6,15 +6,15 @@ import { theme } from "../theme";
 
 const RULES = [
   {
-    body: "Every run lasts 3 minutes. If you bank the run early, every full 10 seconds left multiplies the final score by 1.3x.",
-    title: "Timer"
+    body: "Every run lasts 3 minutes. Force waves hit every 30 seconds, shake the board, and advance the timer by 5 seconds.",
+    title: "Force Waves"
   },
   {
-    body: "Easy starts with 0 filled tiles and pays x2 to x5. Medium starts with 3 filled tiles and pays x5.5 to x7.5. Hard starts with 6 filled tiles and pays x8 to x12.5.",
-    title: "Difficulties"
+    body: "Tremor starts clear and pays x2 to x5. Aftershock starts with 3 cracked tiles and pays x5.5 to x7.5. Quake starts with 6 cracked tiles and pays x8 to x12.5.",
+    title: "Intensity"
   },
   {
-    body: "Each difficulty gets 3 free games per day. After that, extra games cost 50 chips. Rewards are based on 50 chips even when the game was free.",
+    body: "Each intensity gets 3 free games per day. After that, extra games cost 50 chips. Rewards are based on 50 chips even when the game was free.",
     title: "Entry"
   },
   {
@@ -26,7 +26,7 @@ const RULES = [
     title: "Special Tiles"
   },
   {
-    body: "Undo rewinds the last move. X2 doubles new 21 payouts for 10 seconds and recharges in 40 seconds. Lightning cashes all current 21s for 1.5x and recharges in 60 seconds.",
+    body: "Undo rewinds the last move. X2 doubles new 21 payouts for 10 seconds and recharges in 40 seconds. Shockwave cashes all current 21s for 1.5x and recharges in 60 seconds.",
     title: "Power-Ups"
   }
 ];
@@ -38,7 +38,7 @@ export function HowToPlayScreen() {
         <Text style={styles.kicker}>Rules</Text>
         <Text style={styles.title}>21 Quake Rules</Text>
         <Text style={styles.body}>
-          The current run format, scoring, special tiles, and power-ups all in one place.
+          The current force-wave format, scoring, special tiles, and power-ups all in one place.
         </Text>
         <Pressable
           onPress={() => router.push("/play" as Href)}

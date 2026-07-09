@@ -66,6 +66,8 @@ const MULTIPLIER_RECHARGE_SECONDS = 40;
 const LIGHTNING_RECHARGE_SECONDS = 60;
 const LIGHTNING_BONUS_MULTIPLIER = 1.5;
 const EARLY_FINISH_BONUS_MULTIPLIER = 1.3;
+const QUAKE_WAVE_INTERVAL_SECONDS = 30;
+const QUAKE_WAVE_TIME_PENALTY_SECONDS = 5;
 const PREVIEW_SEED_CELLS: Array<{ col: number; row: number }> = [
   { row: 1, col: 1 },
   { row: 2, col: 2 },
@@ -79,27 +81,27 @@ const DIFFICULTY_OPTIONS = [
   {
     blackjackBonus: 100,
     bustPenalty: 50,
-    description: "Clean board. x2 to x5 rewards.",
+    description: "Calm quake field. x2 to x5 rewards.",
     key: "easy",
-    label: "Easy",
+    label: "Tremor",
     openingTiles: 0,
     startingBankrollLabel: "Use full bankroll"
   },
   {
     blackjackBonus: 338,
     bustPenalty: 100,
-    description: "3 seeded tiles. x5.5 to x7.5 rewards.",
+    description: "3 cracked tiles. x5.5 to x7.5 rewards.",
     key: "medium",
-    label: "Medium",
+    label: "Aftershock",
     openingTiles: 3,
     startingBankrollLabel: "Use full bankroll"
   },
   {
     blackjackBonus: 625,
     bustPenalty: 200,
-    description: "6 seeded tiles. x8 to x12.5 rewards.",
+    description: "6 cracked tiles. x8 to x12.5 rewards.",
     key: "hard",
-    label: "Hard",
+    label: "Quake",
     openingTiles: 6,
     startingBankrollLabel: "Use full bankroll"
   }
@@ -131,6 +133,18 @@ function formatTimerLabel(seconds: number) {
 
 function formatAbilityCooldown(seconds: number) {
   return seconds > 0 ? `${seconds}s` : "Ready";
+}
+
+function formatIntensityLabel(difficulty: SetupDifficulty | string) {
+  if (difficulty === "medium") {
+    return "Aftershock";
+  }
+
+  if (difficulty === "hard") {
+    return "Quake";
+  }
+
+  return "Tremor";
 }
 
 function getEarlyFinishMultiplier(result: "board-sealed" | "bust" | "timeout", spareSeconds: number) {
@@ -353,6 +367,7 @@ export function GameExperience() {
   const pendingPlacementWorldRef = useRef<GameWorld | null>(null);
   const worldRef = useRef<GameWorld | null>(null);
   const countdownCueRef = useRef<string | null>(null);
+  const lastQuakeWaveAtRef = useRef<number | null>(null);
   const dragOffset = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
   const placementImpact = useRef(new Animated.Value(0)).current;
   const placementFlightProgress = useRef(new Animated.Value(0)).current;
@@ -601,6 +616,82 @@ export function GameExperience() {
 
     return () => clearTimeout(redirect);
   }, [currentWorld?.result?.reason, timerFlash]);
+
+  useEffect(() => {
+    if (
+      currentWorld?.status !== "playing" ||
+      currentWorld.result ||
+      timeRemaining <= 0 ||
+      timeRemaining >= RUN_DURATION_SECONDS ||
+      timeRemaining % QUAKE_WAVE_INTERVAL_SECONDS !== 0 ||
+      lastQuakeWaveAtRef.current === timeRemaining
+    ) {
+      return;
+    }
+
+    lastQuakeWaveAtRef.current = timeRemaining;
+    const quakeCue = "FORCE WAVE!";
+    countdownCueRef.current = quakeCue;
+    setCountdownCue(quakeCue);
+    setTimeRemaining((current) =>
+      Math.max(0, current - QUAKE_WAVE_TIME_PENALTY_SECONDS)
+    );
+    setWorld((previous) =>
+      previous && previous.status === "playing" && !previous.result
+        ? {
+            ...previous,
+            eventNonce: previous.eventNonce + 1,
+            message: `Force wave hit. Timer advanced ${QUAKE_WAVE_TIME_PENALTY_SECONDS} seconds.`
+          }
+        : previous
+    );
+
+    timerFlash.stopAnimation();
+    timerFlash.setValue(0);
+    boardShake.stopAnimation();
+    boardShake.setValue(0);
+    Animated.parallel([
+      Animated.sequence([
+        Animated.timing(timerFlash, {
+          duration: 90,
+          toValue: 1,
+          useNativeDriver: true
+        }),
+        Animated.delay(520),
+        Animated.timing(timerFlash, {
+          duration: 260,
+          toValue: 0,
+          useNativeDriver: true
+        })
+      ]),
+      Animated.sequence([
+        Animated.timing(boardShake, {
+          duration: 42,
+          toValue: 1,
+          useNativeDriver: true
+        }),
+        Animated.timing(boardShake, {
+          duration: 52,
+          toValue: -1,
+          useNativeDriver: true
+        }),
+        Animated.timing(boardShake, {
+          duration: 64,
+          toValue: 0.8,
+          useNativeDriver: true
+        }),
+        Animated.timing(boardShake, {
+          duration: 86,
+          toValue: 0,
+          useNativeDriver: true
+        })
+      ])
+    ]).start(({ finished }) => {
+      if (finished) {
+        setCountdownCue((current) => (current === quakeCue ? null : current));
+      }
+    });
+  }, [boardShake, currentWorld?.result, currentWorld?.status, timeRemaining, timerFlash]);
 
   useEffect(() => {
     if (!lightningAnimation) {
@@ -1446,6 +1537,7 @@ export function GameExperience() {
     setTimeRemaining(RUN_DURATION_SECONDS);
     setCountdownCue(null);
     countdownCueRef.current = null;
+    lastQuakeWaveAtRef.current = null;
     setWorld(createWorld(selectedBuyIn, buildDifficultyConfig(selectedDifficulty)));
   }, [currentWorld, isReady, selectedBuyIn, selectedDifficulty, status]);
 
@@ -1480,6 +1572,7 @@ export function GameExperience() {
     setTimeRemaining(RUN_DURATION_SECONDS);
     setCountdownCue(null);
     countdownCueRef.current = null;
+    lastQuakeWaveAtRef.current = null;
 
     const nextDifficulty: SetupDifficulty = requestedDifficulty;
     const nextBuyIn = getSessionBankroll(profile?.nChips);
@@ -1528,7 +1621,7 @@ export function GameExperience() {
         setEconomyMessage(
           data.entryCostCharged > 0
             ? "50 chips entry used"
-            : `${data.freeGamesRemaining} free ${data.difficulty} games left today`
+            : `${data.freeGamesRemaining} free ${formatIntensityLabel(data.difficulty)} games left today`
         );
         await refreshProfile();
       } catch (error) {
@@ -1562,6 +1655,7 @@ export function GameExperience() {
     setMultiplierReadyAt(0);
     setLightningReadyAt(0);
     setTimeRemaining(RUN_DURATION_SECONDS);
+    lastQuakeWaveAtRef.current = null;
     setActiveSession(
       session
         ? {
@@ -1682,7 +1776,7 @@ export function GameExperience() {
       bankroll: currentWorld.bankroll + strikeBonus,
       event: "lock",
       eventNonce: currentWorld.eventNonce + 1,
-      message: `Lightning strike cashes ${completedTwentyOnes} completed 21s for ${formatChipCount(strikeBonus)}.`,
+      message: `Shockwave cashes ${completedTwentyOnes} completed 21s for ${formatChipCount(strikeBonus)}.`,
       payout: currentWorld.payout + strikeBonus,
       score: currentWorld.score + strikeBonus
     });
@@ -1732,12 +1826,12 @@ export function GameExperience() {
     { label: "Timer", value: formatTimerLabel(timeRemaining) }
   ];
   const bannerStats = [{ label: "Score", value: currentScoreLabel }];
-  const setupWizardTitle = "Choose your difficulty";
+  const setupWizardTitle = "Choose quake intensity";
   const setupWizardBody =
-    "Pick the board pressure and start a 3 minute run.";
+    "Build 21s under force waves. Every wave shakes the grid and advances the timer.";
   const setupSelectedOpeningLabel = selectedDifficultyOption.openingTiles
-    ? `${selectedDifficultyOption.openingTiles} tiles start on the board`
-    : "The board starts empty";
+    ? `${selectedDifficultyOption.openingTiles} cracked tiles start on the board`
+    : "The quake field starts clear";
   const setupDifficultySummary = `${setupSelectedOpeningLabel}. A 21 pays +${formatChipCount(
     calculateBlackjackBonus(selectedBuyIn, selectedDifficultyOption.blackjackBonus)
   )} and a bust costs -${formatChipCount(

@@ -17,7 +17,7 @@ import {
 import { theme } from "../theme";
 
 const themeOptions: { label: string; value: VisualThemeKey }[] = [
-  { label: "Classic", value: "classic" },
+  { label: "Quake", value: "classic" },
   { label: "Ocean", value: "ocean" },
   { label: "Sunset", value: "sunset" }
 ];
@@ -179,7 +179,7 @@ export function SettingsScreen() {
       <View style={[styles.section, isWide && styles.sectionWide]}>
         <Text style={styles.sectionTitle}>Rules</Text>
         <Text style={styles.sectionText}>
-          Open the current game rules, scoring, difficulty values, and power-up guide.
+          Open the current game rules, scoring, intensity values, and power-up guide.
         </Text>
         <Pressable
           onPress={() => router.push("/how-to-play" as Href)}

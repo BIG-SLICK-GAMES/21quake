@@ -115,7 +115,7 @@ function QUAKELogo() {
         <View style={logoStyles.glare} />
         <View style={logoStyles.stripe} />
         <Text style={logoStyles.number}>21</Text>
-        <Text style={logoStyles.name}>STACK’EM</Text>
+        <Text style={logoStyles.name}>QUAKE</Text>
         <Animated.View
           pointerEvents="none"
           style={[
@@ -135,9 +135,9 @@ const difficultyOptions: Array<{
   openingTiles: number;
   rewardRange: string;
 }> = [
-  { body: "Clean board / lower reward.", key: "easy", label: "Easy", openingTiles: 0, rewardRange: "x2 to x5" },
-  { body: "3 filled tiles / better reward.", key: "medium", label: "Medium", openingTiles: 3, rewardRange: "x5.5 to x7.5" },
-  { body: "6 filled tiles / highest reward.", key: "hard", label: "Hard", openingTiles: 6, rewardRange: "x8 to x12.5" }
+  { body: "Clear field / lower reward.", key: "easy", label: "Tremor", openingTiles: 0, rewardRange: "x2 to x5" },
+  { body: "3 cracked tiles / better reward.", key: "medium", label: "Aftershock", openingTiles: 3, rewardRange: "x5.5 to x7.5" },
+  { body: "6 cracked tiles / highest reward.", key: "hard", label: "Quake", openingTiles: 6, rewardRange: "x8 to x12.5" }
 ];
 
 const previewSeedCells = [
@@ -313,10 +313,10 @@ export function HomeScreen() {
 
         <View style={styles.boardPreviewShell}>
           <View style={styles.boardPreviewMetaRow}>
-            <Text style={styles.boardPreviewTitle}>Preview Board</Text>
+            <Text style={styles.boardPreviewTitle}>Quake Field</Text>
             <View style={styles.boardPreviewMetaActions}>
               <Text style={styles.boardPreviewMeta}>
-                {selectedDifficultyOption.openingTiles} filled tiles
+                {selectedDifficultyOption.openingTiles} cracked tiles
               </Text>
               <Pressable
                 accessibilityLabel="Open 21 Quake tutorial"
@@ -446,7 +446,7 @@ export function HomeScreen() {
             style={styles.playButtonSurface}
           >
             <MaterialCommunityIcons color="#ffffff" name="play" size={26} />
-            <Text style={styles.playButtonText}>PLAY GAME</Text>
+            <Text style={styles.playButtonText}>PLAY QUAKE</Text>
             <View style={styles.playCostBadge}>
               <Text style={styles.playCostBadgeText}>{selectedPlayCostLabel}</Text>
             </View>
@@ -490,8 +490,8 @@ export function HomeScreen() {
                 <Text style={styles.tutorialKicker}>How To Play</Text>
                 <Text style={styles.tutorialTitle}>21 Quake</Text>
                 <Text style={styles.tutorialLead}>
-                  Stack numbered tiles onto the grid and build blackjack-style rows and
-                  columns. Every line that lands exactly on 21 locks in and pays.
+                  Drop numbered tiles onto the quake field and build blackjack-style
+                  rows and columns. Every line that lands exactly on 21 locks in and pays.
                 </Text>
               </View>
               <Pressable
@@ -611,7 +611,7 @@ export function HomeScreen() {
                 <TutorialStep
                   icon="numeric-3-circle"
                   title="Hit Exactly 21"
-                  body="A row or column that totals 21 locks, turns green, and adds the difficulty reward."
+                  body="A row or column that totals 21 locks, turns green, and adds the intensity reward."
                 />
                 <TutorialStep
                   icon="numeric-4-circle"
@@ -624,9 +624,9 @@ export function HomeScreen() {
                 <Text style={styles.tutorialBandTitle}>Why It Exists</Text>
                 <Text style={styles.tutorialBandText}>
                   21 Quake is a fast blackjack puzzle built for Big Slick players:
-                  casino math, grid pressure, and short sessions that reward clean
-                  decisions. Easy starts empty, Medium starts with 3 filled tiles, and
-                  Hard starts with 6.
+                  casino math, force waves, and short sessions that reward clean
+                  decisions. Tremor starts clear, Aftershock starts with 3 cracked tiles,
+                  and Quake starts with 6.
                 </Text>
               </View>
 
@@ -642,7 +642,7 @@ export function HomeScreen() {
                     <Text style={styles.tutorialPayoutDifficulty}>{option.label}</Text>
                     <Text style={styles.tutorialPayoutValue}>{option.rewardRange}</Text>
                     <Text style={styles.tutorialPayoutMeta}>
-                      {option.openingTiles} filled tiles
+                      {option.openingTiles} cracked tiles
                     </Text>
                   </View>
                 ))}
@@ -651,7 +651,7 @@ export function HomeScreen() {
               <View style={styles.tutorialInfoBand}>
                 <Text style={styles.tutorialBandTitle}>Attempts And Cost</Text>
                 <Text style={styles.tutorialBandText}>
-                  You get 3 free attempts per difficulty each day. After those are used,
+                  You get 3 free attempts per intensity each day. After those are used,
                   each Quake game costs 50 chips. The Play button shows the remaining
                   free attempts or the chip cost before you start.
                 </Text>

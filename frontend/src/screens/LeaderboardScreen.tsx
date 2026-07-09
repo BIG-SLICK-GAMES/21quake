@@ -205,9 +205,21 @@ function formatMetric(entry: LeaderboardEntry | HubQUAKEWeeklyEntry, kind: "line
   return formatChipCount(legacyEntry.adjustedScore);
 }
 
+function formatIntensityLabel(difficulty?: string) {
+  if (difficulty === "medium") {
+    return "Aftershock";
+  }
+
+  if (difficulty === "hard") {
+    return "Quake";
+  }
+
+  return "Tremor";
+}
+
 function formatMeta(entry: LeaderboardEntry | HubQUAKEWeeklyEntry, kind: "lines" | "time" | "weekly" | "winners") {
   if (kind === "weekly" && "successful21Count" in entry) {
-    return `${entry.successful21Count} successful 21s | best ${formatChipCount(entry.bestSingleWin)} | ${entry.difficulty}`;
+    return `${entry.successful21Count} successful 21s | best ${formatChipCount(entry.bestSingleWin)} | ${formatIntensityLabel(entry.difficulty)}`;
   }
 
   const legacyEntry = entry as LeaderboardEntry;
