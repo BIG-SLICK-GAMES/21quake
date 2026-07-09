@@ -42,6 +42,14 @@ const developmentApiHost = "192.168.0.111";
 const productionApiBaseUrl = "https://api.bigslickgames.com";
 const productionSocketBaseUrl = "wss://api.bigslickgames.com";
 
+function getBrowserOrigin() {
+  if (typeof window === "undefined" || !window.location?.origin) {
+    return null;
+  }
+
+  return window.location.origin.replace(/\/$/, "");
+}
+
 function getBrowserHost() {
   if (typeof window === "undefined" || !window.location?.hostname) {
     return developmentApiHost;
@@ -61,12 +69,24 @@ function buildDefaultApiBaseUrl() {
     return productionApiBaseUrl;
   }
 
+  const browserOrigin = getBrowserOrigin();
+
+  if (browserOrigin) {
+    return browserOrigin;
+  }
+
   return `http://${getBrowserHost()}:3050`;
 }
 
 function buildDefaultSocketBaseUrl() {
   if (appEnv === "production") {
     return productionSocketBaseUrl;
+  }
+
+  const browserOrigin = getBrowserOrigin();
+
+  if (browserOrigin) {
+    return browserOrigin.replace(/^http:/, "ws:").replace(/^https:/, "wss:");
   }
 
   return `ws://${getBrowserHost()}:3050`;

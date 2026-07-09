@@ -1,0 +1,64 @@
+services:
+  quake-backend:
+    build:
+      context: ./backend
+    container_name: bsg-21quake-backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      APP_ENV: docker
+      GAME_ID: 21quake
+      PORT: 4100
+      MONGO_URI: mongodb://mongodb:27017/holdem_test1
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: docker-dev-secret-change-me
+      COMMON_API_BASE_URL:
+    expose:
+      - "4100"
+    networks:
+      - default
+      - holdem
+
+  quake-dev:
+    image: node:20-alpine
+    container_name: bsg-21quake-dev
+    working_dir: /app
+    command: sh -lc "if [ ! -x node_modules/.bin/expo ]; then npm ci; fi; npm run web -- --host lan --port 8081"
+    environment:
+      CI: "false"
+      EXPO_PUBLIC_APP_ENV: development
+      EXPO_PUBLIC_GAME_ID: 21quake
+      EXPO_PUBLIC_API_BASE_URL: ""
+      EXPO_PUBLIC_SOCKET_BASE_URL: ""
+      EXPO_PUBLIC_BIG_SLICK_GAMES_URL: https://bigslickgames.com
+    volumes:
+      - ./frontend:/app
+      - quake_node_modules:/app/node_modules
+    expose:
+      - "8081"
+    networks:
+      - default
+
+  quake-proxy:
+    image: nginx:1.27-alpine
+    container_name: bsg-21quake-proxy
+    restart: unless-stopped
+    depends_on:
+      - quake-backend
+      - quake-dev
+    volumes:
+      - ./frontend/nginx/dev.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "3500:80"
+    networks:
+      - default
+      - holdem
+
+volumes:
+  quake_node_modules:
+
+networks:
+  holdem:
+    external: true
+    name: 21holdem_default
