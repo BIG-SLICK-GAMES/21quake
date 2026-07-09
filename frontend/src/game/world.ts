@@ -252,6 +252,37 @@ export function swapBoardTile(
   return resolveTurn(world, board, row, col, resolvedTile, "swap");
 }
 
+export function dropQuakeTile(world: GameWorld): GameWorld {
+  if (world.status !== "playing" || world.result) {
+    return world;
+  }
+
+  const landingOptions = getQuakeLandingOptions(world);
+
+  if (!landingOptions.length) {
+    return finishWorld(world, "board-sealed");
+  }
+
+  const tileIndex = world.deck.findIndex((tile) => tile.kind === "standard");
+
+  if (tileIndex < 0) {
+    return finishWorld(world, "board-sealed");
+  }
+
+  const target = landingOptions[Math.floor(Math.random() * landingOptions.length)];
+  const nextDeck = [...world.deck];
+  const tile = nextDeck.splice(tileIndex, 1)[0];
+  const board = cloneBoard(world.board);
+  const droppedTile = {
+    ...tile,
+    id: `${tile.id}-quake-${world.eventNonce + 1}`
+  };
+
+  board[target.row][target.col] = droppedTile;
+
+  return resolveQuakeDrop(world, board, nextDeck, target.row, target.col, droppedTile);
+}
+
 export function formatLineValue(line: LineSummary) {
   if (line.total === TARGET_TOTAL) {
     return "21";
@@ -391,6 +422,125 @@ function finishWorld(
     },
     status: reason === "bust" ? "bust" : "cleared"
   };
+}
+
+function resolveQuakeDrop(
+  world: GameWorld,
+  board: GameWorld["board"],
+  deck: StackTile[],
+  row: number,
+  col: number,
+  tile: StackTile
+): GameWorld {
+  const rowLines = buildRowLines(board, world.rowLines);
+  const columnLines = buildColumnLines(board, world.columnLines);
+  const hitRows = rowLines
+    .filter((line) => line.total === TARGET_TOTAL && world.rowLines[line.index].total !== TARGET_TOTAL)
+    .map((line) => line.index);
+  const hitColumns = columnLines
+    .filter(
+      (line) =>
+        line.total === TARGET_TOTAL && world.columnLines[line.index].total !== TARGET_TOTAL
+    )
+    .map((line) => line.index);
+  const bustRows = rowLines
+    .filter((line) => line.total > TARGET_TOTAL && world.rowLines[line.index].total <= TARGET_TOTAL)
+    .map((line) => line.index);
+  const bustColumns = columnLines
+    .filter(
+      (line) =>
+        line.total > TARGET_TOTAL && world.columnLines[line.index].total <= TARGET_TOTAL
+    )
+    .map((line) => line.index);
+  const blackjackCount = hitRows.length + hitColumns.length;
+  const bustCount = bustRows.length + bustColumns.length;
+  const reward = blackjackCount * world.blackjackBonus;
+  const penalty = bustCount * world.bustPenalty;
+  const bankroll = Math.max(0, world.bankroll + reward - penalty);
+  const lineBurst = bustCount
+    ? {
+        columns: bustColumns,
+        rows: bustRows
+      }
+    : {
+        columns: hitColumns,
+        rows: hitRows
+      };
+  const nextWorldBase: GameWorld = {
+    ...world,
+    bankroll,
+    board,
+    columnLines,
+    combo: blackjackCount ? world.combo + 1 : 0,
+    deck,
+    event: bustCount ? "bust" : blackjackCount ? "lock" : "quake",
+    eventNonce: world.eventNonce + 1,
+    lastPlacement: { col, row },
+    lineBurst,
+    linesCompleted: world.linesCompleted + blackjackCount,
+    message: formatQuakeDropMessage(tile, row, col, bankroll, blackjackCount, bustCount, world.blackjackBonus, world.bustPenalty),
+    payout: bankroll,
+    result: null,
+    rowLines,
+    score: bankroll - world.buyIn
+  };
+
+  if (bustCount > 0 || bankroll <= 0) {
+    return finishWorld(nextWorldBase, "bust", bustRows[0], bustColumns[0]);
+  }
+
+  const playableCells = getPlayableCells(nextWorldBase);
+
+  if (!playableCells.length) {
+    return finishWorld(nextWorldBase, "board-sealed", bustRows[0], bustColumns[0]);
+  }
+
+  return nextWorldBase;
+}
+
+function formatQuakeDropMessage(
+  tile: StackTile,
+  row: number,
+  col: number,
+  bankroll: number,
+  blackjackCount: number,
+  bustCount: number,
+  blackjackBonus: number,
+  bustPenalty: number
+) {
+  const resultParts = [
+    `Quake dropped ${tile.rank} onto row ${row + 1}, column ${col + 1}.`,
+    `Bank ${bankroll}.`
+  ];
+
+  if (blackjackCount) {
+    resultParts.unshift(`${blackjackCount} x 21 pays ${blackjackBonus} chips.`);
+  }
+
+  if (bustCount) {
+    resultParts.unshift(`${bustCount} bust penalty ${bustPenalty} chips.`);
+  }
+
+  return resultParts.join(" ");
+}
+
+function getQuakeLandingOptions(world: GameWorld) {
+  const options: Array<{ col: number; row: number }> = [];
+
+  for (let col = 0; col < GRID_SIZE; col += 1) {
+    for (let row = GRID_SIZE - 1; row >= 0; row -= 1) {
+      if (world.board[row][col] || isCellLocked(world, row, col)) {
+        continue;
+      }
+
+      if (row === GRID_SIZE - 1 || world.board[row + 1][col]) {
+        options.push({ col, row });
+        break;
+      }
+    }
+  }
+
+  return options;
 }
 
 function advanceQueue(world: GameWorld, board: GameWorld["board"]) {

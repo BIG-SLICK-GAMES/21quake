@@ -6,7 +6,7 @@ import { theme } from "../theme";
 
 const RULES = [
   {
-    body: "Every run lasts 3 minutes. Force waves hit every 30 seconds, shake the board, and advance the timer by 5 seconds.",
+    body: "Every run lasts 3 minutes. Force waves hit every 30 seconds, shake the board, advance the timer by 5 seconds, and drop a tile from above onto a column stack.",
     title: "Force Waves"
   },
   {

@@ -23,7 +23,7 @@ export type TileKind = "standard" | "wild" | "swap";
 
 export type GameStatus = "idle" | "playing" | "bust" | "cleared";
 export type LineStatus = "open" | "locked";
-export type GameEvent = "none" | "start" | "place" | "lock" | "bust" | "clear";
+export type GameEvent = "none" | "start" | "place" | "lock" | "bust" | "clear" | "quake";
 
 export interface StackTile {
   id: string;

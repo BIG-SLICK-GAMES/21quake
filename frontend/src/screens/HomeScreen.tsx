@@ -624,7 +624,7 @@ export function HomeScreen() {
                 <Text style={styles.tutorialBandTitle}>Why It Exists</Text>
                 <Text style={styles.tutorialBandText}>
                   21 Quake is a fast blackjack puzzle built for Big Slick players:
-                  casino math, force waves, and short sessions that reward clean
+                  casino math, falling force-wave tiles, and short sessions that reward clean
                   decisions. Tremor starts clear, Aftershock starts with 3 cracked tiles,
                   and Quake starts with 6.
                 </Text>

@@ -49,6 +49,7 @@ import {
   canSwapAt,
   createWorld,
   createSelectedTile,
+  dropQuakeTile,
   getDeckCountLabel,
   isSwapTile,
   isWildTile,
@@ -374,6 +375,7 @@ export function GameExperience() {
   const lineFlash = useRef(new Animated.Value(0)).current;
   const boardPulse = useRef(new Animated.Value(0)).current;
   const boardShake = useRef(new Animated.Value(0)).current;
+  const quakeDropProgress = useRef(new Animated.Value(1)).current;
   const timerFlash = useRef(new Animated.Value(0)).current;
   const lastFreshParamRef = useRef<string | null>(freshParam ?? null);
   const isDesktop = device.width >= 960;
@@ -638,11 +640,7 @@ export function GameExperience() {
     );
     setWorld((previous) =>
       previous && previous.status === "playing" && !previous.result
-        ? {
-            ...previous,
-            eventNonce: previous.eventNonce + 1,
-            message: `Force wave hit. Timer advanced ${QUAKE_WAVE_TIME_PENALTY_SECONDS} seconds.`
-          }
+        ? dropQuakeTile(previous)
         : previous
     );
 
@@ -933,6 +931,7 @@ export function GameExperience() {
 
     if (
       world.event === "place" ||
+      world.event === "quake" ||
       world.event === "lock" ||
       world.event === "clear" ||
       world.event === "bust"
@@ -965,6 +964,29 @@ export function GameExperience() {
           bounciness: world.event === "bust" ? 6 : 10,
           speed: world.event === "bust" ? 14 : 18,
           toValue: 0,
+          useNativeDriver: true
+        })
+      ]).start();
+    }
+
+    const quakeDroppedTile =
+      world.lastPlacement &&
+      world.board[world.lastPlacement.row]?.[world.lastPlacement.col]?.id.includes("-quake-");
+
+    if (quakeDroppedTile) {
+      quakeDropProgress.stopAnimation();
+      quakeDropProgress.setValue(0);
+      Animated.sequence([
+        Animated.timing(quakeDropProgress, {
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
+          toValue: 0.86,
+          useNativeDriver: true
+        }),
+        Animated.spring(quakeDropProgress, {
+          bounciness: 8,
+          speed: 18,
+          toValue: 1,
           useNativeDriver: true
         })
       ]).start();
@@ -1049,7 +1071,7 @@ export function GameExperience() {
         })
       ]).start();
     }
-  }, [boardPulse, boardShake, lineFlash, placementImpact, world]);
+  }, [boardPulse, boardShake, lineFlash, placementImpact, quakeDropProgress, world]);
 
   useEffect(() => {
     if (!celebrationBurst) {
@@ -1828,7 +1850,7 @@ export function GameExperience() {
   const bannerStats = [{ label: "Score", value: currentScoreLabel }];
   const setupWizardTitle = "Choose quake intensity";
   const setupWizardBody =
-    "Build 21s under force waves. Every wave shakes the grid and advances the timer.";
+    "Build 21s under force waves. Every wave drops a tile from above and advances the timer.";
   const setupSelectedOpeningLabel = selectedDifficultyOption.openingTiles
     ? `${selectedDifficultyOption.openingTiles} cracked tiles start on the board`
     : "The quake field starts clear";
@@ -2648,10 +2670,10 @@ export function GameExperience() {
               <View key={`row-${rowIndex}`} style={[styles.matrixRow, { gap: boardGap, height: boardCell }]}>
                 {row.map((tile, colIndex) => (
                   <View key={`cell-${rowIndex}-${colIndex}`} style={{ height: boardCell, width: boardCell }}>
-                    <BoardCell
-                      busted={
-                        activeBustedRows.includes(rowIndex) || activeBustedCols.includes(colIndex)
-                      }
+                      <BoardCell
+                        busted={
+                          activeBustedRows.includes(rowIndex) || activeBustedCols.includes(colIndex)
+                        }
                       canPlace={
                         currentWorld
                           ? canSelectBoardCell(rowIndex, colIndex)
@@ -2665,12 +2687,18 @@ export function GameExperience() {
                           ? placementImpact
                           : undefined
                       }
-                      lastPlaced={
-                        currentWorld?.lastPlacement?.row === rowIndex &&
-                        currentWorld?.lastPlacement?.col === colIndex
-                      }
-                      lightningFrame={activeLightningFrame}
-                      lightningStriking={activeLightningTargets.includes(`${rowIndex}:${colIndex}`)}
+                        lastPlaced={
+                          currentWorld?.lastPlacement?.row === rowIndex &&
+                          currentWorld?.lastPlacement?.col === colIndex
+                        }
+                        quakeDropValue={quakeDropProgress}
+                        quakeDropped={Boolean(
+                          tile?.id.includes("-quake-") &&
+                            currentWorld?.lastPlacement?.row === rowIndex &&
+                            currentWorld?.lastPlacement?.col === colIndex
+                        )}
+                        lightningFrame={activeLightningFrame}
+                        lightningStriking={activeLightningTargets.includes(`${rowIndex}:${colIndex}`)}
                       locked={
                         rowLines[rowIndex].status === "locked" ||
                         columnLines[colIndex].status === "locked"
@@ -2906,6 +2934,12 @@ export function GameExperience() {
                                 currentWorld?.lastPlacement?.row === rowIndex &&
                                 currentWorld?.lastPlacement?.col === colIndex
                               }
+                              quakeDropValue={quakeDropProgress}
+                              quakeDropped={Boolean(
+                                tile?.id.includes("-quake-") &&
+                                  currentWorld?.lastPlacement?.row === rowIndex &&
+                                  currentWorld?.lastPlacement?.col === colIndex
+                              )}
                               lightningFrame={activeLightningFrame}
                               lightningStriking={activeLightningTargets.includes(`${rowIndex}:${colIndex}`)}
                               locked={
@@ -3177,6 +3211,8 @@ function BoardCell({
   lightningStriking,
   locked,
   onPress,
+  quakeDropped,
+  quakeDropValue,
   tile
 }: {
   busted?: boolean;
@@ -3189,6 +3225,8 @@ function BoardCell({
   lightningStriking?: boolean;
   locked?: boolean;
   onPress: () => void;
+  quakeDropped?: boolean;
+  quakeDropValue?: Animated.Value;
   tile: StackTile | null;
 }) {
   const appearance = useQUAKEAppearance();
@@ -3221,6 +3259,28 @@ function BoardCell({
                     scale: impactValue.interpolate({
                       inputRange: [0, 0.35, 1],
                       outputRange: [1, 0.92, 1.05]
+                    })
+                  }
+                ]
+              }
+            : null,
+          quakeDropped && quakeDropValue
+            ? {
+                opacity: quakeDropValue.interpolate({
+                  inputRange: [0, 0.18, 1],
+                  outputRange: [0, 1, 1]
+                }),
+                transform: [
+                  {
+                    translateY: quakeDropValue.interpolate({
+                      inputRange: [0, 0.78, 1],
+                      outputRange: [-180, 10, 0]
+                    })
+                  },
+                  {
+                    scale: quakeDropValue.interpolate({
+                      inputRange: [0, 0.78, 1],
+                      outputRange: [0.94, 1.08, 1]
                     })
                   }
                 ]
