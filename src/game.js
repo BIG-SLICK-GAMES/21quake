@@ -107,8 +107,8 @@ function holdSlotBounds(index) {
 }
 
 function tileSpritePath(tile) {
-  if (!tile?.rank) return "./assets/tiles-pool-muted-v1/tile-default.png";
-  return `./assets/tiles-pool-muted-v1/${tile.rank}-${tile.skin || 1}.png`;
+  if (!tile?.rank) return "./assets/tiles-varied-v1/tile-default.png";
+  return `./assets/tiles-varied-v1/${tile.rank}-${tile.skin || 1}.png`;
 }
 
 function tileElement(tile, falling) {
