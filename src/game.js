@@ -203,7 +203,7 @@ function currentMenuText() {
   if (isGameOver) {
     return ["GAME OVER", `SCORE ${score}`, "PRESS X TO RESET"].join("\n");
   }
-  if (infoIndex === 0) return [`TOTAL ${selectedTotal()} / 21`, `HELD ${selectedTiles.length}/${maxSelectedTiles}  SCORE ${score}`].join("\n");
+  if (infoIndex === 0) return `TOTAL ${selectedTotal()} / 21`;
   if (infoIndex === 1) return ["NEXT", "MAKE 21 OR SURVIVE QUAKE"].join("\n");
   if (infoIndex === 2) return ["RULES", "OVER 21 OR 5 HELD = GAME OVER"].join("\n");
   if (infoIndex === 3) return ["NEED MORE TILES?", "HIT THE QUAKE BUTTON", "TO GENERATE A QUAKE!"].join("\n");
