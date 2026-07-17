@@ -1,16 +1,9 @@
 services:
-  quake-frontend:
-    build:
-      context: ./frontend
-    container_name: bsg-21quake-frontend
+  quake-screen:
+    image: nginx:1.27-alpine
+    container_name: bsg-21quake-screen
     restart: unless-stopped
-    networks:
-      - default
-      - holdem
     ports:
       - "3500:80"
-
-networks:
-  holdem:
-    external: true
-    name: 21holdem_default
+    volumes:
+      - ./src:/usr/share/nginx/html:ro
